@@ -1,3 +1,5 @@
+import { ScheduledController } from '@cloudflare/workers-types';
+
 const REPO = "dofusdude/dofus3-main";
 const SUPPORTED_LANGS = ["fr", "en", "es", "pt", "de"] as const;
 const DEFAULT_LANG = "fr";
@@ -8,6 +10,8 @@ type Lang = (typeof SUPPORTED_LANGS)[number];
 interface Env {
   KV: KVNamespace;
   ALLOWED_ORIGIN?: string;
+  WORKER_URL?: string;
+  CRON_TOKEN?: string;
   DEV?: string;
 }
 
@@ -179,7 +183,9 @@ export default {
 
     const url = new URL(req.url);
     const isDev = env.DEV === "true";
-    const forceRefresh = isDev && url.searchParams.has("force");
+    const cronToken = req.headers.get("X-Cron-Token");
+    const canForce = isDev || (cronToken === env.CRON_TOKEN);
+    const forceRefresh = canForce && url.searchParams.has("force");
 
     // Debug route to inspect KV contents (dev only)
     if (isDev && url.pathname === "/__debug/kv") {
@@ -265,6 +271,25 @@ export default {
 
     return buildResponse(result, etag, env, req.method);
   },
+
+  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    const baseUrl = env.WORKER_URL;
+
+    const tasks = SUPPORTED_LANGS.map(lang => {
+      const targetUrl = `${baseUrl}/?lang=${lang}&force=true`;
+
+      return fetch(targetUrl, {
+        method: "GET",
+        headers: {
+          "X-Cron-Token": env.CRON_TOKEN || ""
+        }
+      }).then(res => {
+        console.log(`Cron loop for ${lang}: ${res.status}`);
+      });
+    });
+
+    ctx.waitUntil(Promise.all(tasks));
+  }
 } satisfies ExportedHandler<Env>;
 
 // ─── JSON response ───────────────────────────────────────────────────────────
