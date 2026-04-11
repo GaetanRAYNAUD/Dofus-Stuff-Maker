@@ -1,0 +1,13 @@
+{
+  "name": "dofus-stuff-maker-worker",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --config wrangler.prod.toml"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20260411.1",
+    "typescript": "5.9.3",
+    "wrangler": "4.81.1"
+  }
+}
