@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+/* ─── Custom properties ──────────────────────────────────────────────────── */
+:root {
+  --bg:             #0d0b09;
+  --surface:        #1c1812;
+  --surface-2:      #242015;
+  --border:         #4a3818;
+  --border-bright:  #9a7428;
+  --gold:           #c89030;
+  --gold-bright:    #e8b850;
+  --text:           #c0a870;
+  --text-dim:       #60503a;
+  --text-bright:    #e8d8a8;
+  --slot-bg:        #141008;
+  --slot-border:    #382c14;
+  --slot-glow:      rgba(200, 144, 48, 0.28);
+
+  --slot-size: 72px;
+  --char-w:    200px;
+  --char-h:    240px;
+  --gap:       8px;
+
+  --font-title: 'Cinzel', 'Palatino Linotype', Georgia, serif;
+  --font-body:  'Crimson Text', Georgia, serif;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 40% at 50% 0%,  rgba(100,68,18,.18) 0%, transparent 100%),
+    radial-gradient(ellipse 60% 30% at 50% 100%, rgba( 8, 6, 2,.70) 0%, transparent 100%);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.4;
+  overflow-x: hidden;
+}
+
+/* ─── Loading overlay ────────────────────────────────────────────────────── */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: var(--bg);
+  z-index: 100;
+}
+
+.loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-label {
+  font-size: 13px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ─── App shell ──────────────────────────────────────────────────────────── */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.app-header {
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(to bottom, rgba(36,26,10,.9), transparent);
+}
+
+.app-title {
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 24px rgba(200,144,48,.4);
+}
+
+.app-version {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ─── Main layout ────────────────────────────────────────────────────────── */
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 32px;
+  padding: 36px 32px;
+}
+
+/* ─── Equipment section ──────────────────────────────────────────────────── */
+.equipment-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Grid: left col | character (1fr) | right col, same total width as dofus row */
+.equipment-grid {
+  display: grid;
+  width: calc(6 * var(--slot-size) + 5 * var(--gap));
+  grid-template-columns: var(--slot-size) 1fr var(--slot-size);
+  grid-template-rows: repeat(5, var(--slot-size));
+  row-gap: var(--gap);
+  column-gap: 20px;
+  grid-template-areas:
+    "hat    char  amulet"
+    "cape   char  ring1"
+    "weapon char  ring2"
+    "shield char  belt"
+    "pet    char  boots";
+  gap: var(--gap);
+}
+
+/* ─── Character area ─────────────────────────────────────────────────────── */
+.character-area {
+  grid-area: char;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(70,50,16,.35) 0%, var(--slot-bg) 72%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Corner ornaments */
+.character-area::before,
+.character-area::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--border-bright);
+  border-style: solid;
+  opacity: 0.5;
+  z-index: 1;
+}
+.character-area::before { top: 6px;    left: 6px;   border-width: 1px 0 0 1px; }
+.character-area::after  { bottom: 6px; right: 6px;  border-width: 0 1px 1px 0; }
+
+.character-svg {
+  width: 72%;
+  height: 72%;
+  filter: drop-shadow(0 0 10px rgba(200,144,48,.2));
+}
+
+/* ─── Slot ───────────────────────────────────────────────────────────────── */
+.slot {
+  position: relative;
+  width: var(--slot-size);
+  height: var(--slot-size);
+  background: var(--slot-bg);
+  border: 1px solid var(--slot-border);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.slot:hover {
+  border-color: var(--gold);
+  box-shadow: 0 0 12px var(--slot-glow), inset 0 0 10px rgba(200,144,48,.06);
+}
+
+/* Corner ornaments on slots */
+.slot::before,
+.slot::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-color: var(--border-bright);
+  border-style: solid;
+  opacity: .45;
+  pointer-events: none;
+  transition: opacity .15s, border-color .15s;
+}
+.slot::before { top: 3px;    left: 3px;   border-width: 1px 0 0 1px; }
+.slot::after  { bottom: 3px; right: 3px;  border-width: 0 1px 1px 0; }
+.slot:hover::before,
+.slot:hover::after { opacity: 1; border-color: var(--gold); }
+
+.slot-icon {
+  font-size: 22px;
+  color: var(--slot-border);
+  line-height: 1;
+  transition: color .15s;
+}
+.slot:hover .slot-icon { color: var(--border-bright); }
+
+.slot-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  text-align: center;
+  line-height: 1.2;
+  user-select: none;
+  transition: color .15s;
+  padding: 0 3px;
+}
+.slot:hover .slot-label { color: var(--gold); }
+
+/* Equipped state */
+.slot--equipped {
+  border-color: var(--border-bright);
+}
+
+.slot-item-img {
+  width:  100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+  image-rendering: pixelated;
+}
+
+/* Grid area assignments */
+.slot[data-slot="hat"]    { grid-area: hat;    }
+.slot[data-slot="cape"]   { grid-area: cape;   }
+.slot[data-slot="weapon"] { grid-area: weapon; }
+.slot[data-slot="shield"] { grid-area: shield; }
+.slot[data-slot="pet"]    { grid-area: pet;    }
+.slot[data-slot="amulet"] { grid-area: amulet; }
+.slot[data-slot="ring1"]  { grid-area: ring1;  }
+.slot[data-slot="ring2"]  { grid-area: ring2;  }
+.slot[data-slot="belt"]   { grid-area: belt;   }
+.slot[data-slot="boots"]  { grid-area: boots;  }
+
+/* ─── Dofus row ──────────────────────────────────────────────────────────── */
+.dofus-row {
+  display: flex;
+  gap: var(--gap);
+  align-items: center;
+}
+
+.dofus-row .slot-label { font-size: 9px; }
+
+/* Separator above dofus row */
+.dofus-row::before {
+  display: none; /* handled by gap + section title */
+}
+
+/* ─── Ornamental divider ──────────────────────────────────────────────────── */
+.dofus-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: calc(var(--slot-size) + var(--char-w) + var(--slot-size) + 2 * var(--gap));
+}
+.dofus-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border), transparent);
+}
+.dofus-divider-label {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+/* ─── Stats panel ─────────────────────────────────────────────────────────── */
+.stats-panel {
+  width: 210px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px;
+  position: sticky;
+  top: 32px;
+
+  /* Corner ornaments via outline trick */
+  box-shadow:
+    inset  6px  6px 0 -5px var(--border-bright),
+    inset -6px -6px 0 -5px var(--border-bright);
+}
+
+.panel-title {
+  font-family: var(--font-title);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-empty {
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+  line-height: 1.7;
+  padding: 16px 0;
+}

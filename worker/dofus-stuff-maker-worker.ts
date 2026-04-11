@@ -176,8 +176,10 @@ interface GitHubRelease {
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const origin = req.headers.get("Origin");
+
     if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders(env) });
+      return new Response(null, { status: 204, headers: corsHeaders(env, origin) });
     }
 
     if (req.method !== "GET" && req.method !== "HEAD") {
@@ -203,7 +205,9 @@ export default {
     }
 
     const lang = resolveLang(req, url);
-    const clientEtag = req.headers.get("If-None-Match");
+    const rawClientEtag = req.headers.get("If-None-Match");
+    // Normalize weak ETags (W/"...") to strong form ("...") for comparison
+    const clientEtag = rawClientEtag?.startsWith("W/") ? rawClientEtag.slice(2) : rawClientEtag;
 
     let refreshResult: RefreshResult;
     try {
@@ -212,7 +216,7 @@ export default {
       const cached = await env.KV.get<KVCacheEntry>(`dofus_${ lang }`, "json");
       if (cached) {
         console.warn("Refresh failed, using cached data:", (err as Error).message);
-        return buildResponse(cached.data, cached.etag, env, req.method);
+        return buildResponse(cached.data, cached.etag, env, req.method, origin);
       }
       return new Response(`Refresh failed: ${ (err as Error).message }`, { status: 502 });
     }
@@ -221,11 +225,11 @@ export default {
     if (clientEtag === refreshResult.etag) {
       return new Response(null, {
         status: 304,
-        headers: { ETag: refreshResult.etag, ...corsHeaders(env) },
+        headers: { ETag: refreshResult.etag, ...corsHeaders(env, origin) },
       });
     }
 
-    return buildResponse(refreshResult.data, refreshResult.etag, env, req.method);
+    return buildResponse(refreshResult.data, refreshResult.etag, env, req.method, origin);
   },
 
   async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
@@ -280,24 +284,36 @@ async function refreshLang(env: Env, ctx: ExecutionContext, lang: Lang, forceRef
 
 // ─── JSON response ───────────────────────────────────────────────────────────
 
-function buildResponse(data: TransformResult, etag: string, env: Env, method: string): Response {
+function buildResponse(data: TransformResult, etag: string, env: Env, method: string, origin: string | null): Response {
   return new Response(method === "HEAD" ? null : JSON.stringify(data), {
     status: 200,
     headers: {
       "Content-Type": "application/json;charset=UTF-8",
       ETag: etag,
       "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
-      ...corsHeaders(env),
+      ...corsHeaders(env, origin),
     },
   });
 }
 
-function corsHeaders(env: Env): Record<string, string> {
+function corsHeaders(env: Env, requestOrigin: string | null): Record<string, string> {
+  const allowed = env.ALLOWED_ORIGIN ? env.ALLOWED_ORIGIN.split(",").map((o) => o.trim()) : null;
+
+  let origin: string;
+  if (!allowed) {
+    origin = "*";
+  } else if (requestOrigin && allowed.includes(requestOrigin)) {
+    origin = requestOrigin;
+  } else {
+    origin = allowed[0]!;
+  }
+
   return {
-    "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN ?? "*",
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
     "Access-Control-Allow-Headers": "If-None-Match",
     "Access-Control-Expose-Headers": "ETag",
+    ...(origin !== "*" && { Vary: "Origin" }),
   };
 }
 

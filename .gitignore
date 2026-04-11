@@ -37,3 +37,9 @@ worker/node_modules/
 worker/package-lock.json
 
 .claude/settings.local.json
+
+front/node_modules/
+
+front/dist/
+
+front/package-lock.json

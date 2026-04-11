@@ -1,0 +1,14 @@
+{
+  "name": "dofus-stuff-maker-front",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch",
+    "download-images": "node ../scripts/download-images.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.0",
+    "typescript": "5.9.3"
+  }
+}

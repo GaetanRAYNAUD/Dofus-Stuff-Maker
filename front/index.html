@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dofus Stuff Maker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="loading" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p class="loading-label">Chargement des données…</p>
+  </div>
+
+  <div id="app" class="app" hidden>
+    <header class="app-header">
+      <h1 class="app-title">Dofus Stuff Maker</h1>
+      <span class="app-version" id="app-version"></span>
+    </header>
+
+    <main class="app-main">
+
+      <section class="equipment-section">
+        <div class="equipment-grid" id="equipment-grid">
+          <!-- slots injected by main.ts -->
+          <div class="character-area" id="character-area">
+            <svg class="character-svg" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="cg" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#c89030" stop-opacity="0.15"/>
+                  <stop offset="100%" stop-color="#c89030" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+              <ellipse cx="50" cy="100" rx="46" ry="96" fill="url(#cg)"/>
+              <!-- Head -->
+              <circle cx="50" cy="28" r="17" fill="#4e3a22"/>
+              <circle cx="50" cy="27" r="13" fill="#6a5030"/>
+              <path d="M33 22 Q50 6 67 22 L67 28 Q50 20 33 28 Z" fill="#7a6030"/>
+              <rect x="37" y="26" width="26" height="4" rx="2" fill="#14100a"/>
+              <!-- Neck -->
+              <rect x="45" y="44" width="10" height="8" fill="#4e3a22"/>
+              <!-- Torso -->
+              <path d="M24 52 L20 105 L80 105 L76 52 Q50 60 24 52 Z" fill="#3a2e1c"/>
+              <path d="M27 54 L24 100 L76 100 L73 54 Q50 62 27 54 Z" fill="#4a3c28"/>
+              <path d="M42 65 L50 58 L58 65 L50 72 Z" fill="#9a7030" opacity="0.8"/>
+              <!-- Belt -->
+              <rect x="26" y="95" width="48" height="12" rx="2" fill="#8a6020"/>
+              <circle cx="50" cy="101" r="4" fill="#c09040"/>
+              <!-- Left arm -->
+              <path d="M24 56 L8 102 L17 106 L28 64 Z" fill="#3a2e1c"/>
+              <rect x="4" y="100" width="15" height="12" rx="3" fill="#2e2416"/>
+              <!-- Right arm -->
+              <path d="M76 56 L92 102 L83 106 L72 64 Z" fill="#3a2e1c"/>
+              <rect x="81" y="100" width="15" height="12" rx="3" fill="#2e2416"/>
+              <!-- Legs -->
+              <path d="M30 105 L26 160 L40 160 L44 108 Z" fill="#3a2e1c"/>
+              <path d="M70 105 L74 160 L60 160 L56 108 Z" fill="#3a2e1c"/>
+              <!-- Boots -->
+              <path d="M23 155 L19 182 L42 182 L40 155 Z" fill="#241c10"/>
+              <path d="M77 155 L81 182 L58 182 L60 155 Z" fill="#241c10"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="dofus-divider">
+          <span class="dofus-divider-line"></span>
+          <span class="dofus-divider-label">Dofus</span>
+          <span class="dofus-divider-line"></span>
+        </div>
+        <div class="dofus-row" id="dofus-row">
+          <!-- slots injected by main.ts -->
+        </div>
+      </section>
+
+      <aside class="stats-panel">
+        <h2 class="panel-title">Caractéristiques</h2>
+        <div id="stats-content" class="stats-empty">
+          <p>Équipez des objets<br>pour voir les stats.</p>
+        </div>
+      </aside>
+
+    </main>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
