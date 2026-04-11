@@ -10,9 +10,12 @@ type Lang = (typeof SUPPORTED_LANGS)[number];
 interface Env {
   KV: KVNamespace;
   ALLOWED_ORIGIN?: string;
-  WORKER_URL?: string;
-  CRON_TOKEN?: string;
   DEV?: string;
+}
+
+interface RefreshResult {
+  data: TransformResult;
+  etag: string;
 }
 
 // ─── Raw types (from GitHub release) ─────────────────────────────────────────
@@ -183,9 +186,7 @@ export default {
 
     const url = new URL(req.url);
     const isDev = env.DEV === "true";
-    const cronToken = req.headers.get("X-Cron-Token");
-    const canForce = isDev || (cronToken === env.CRON_TOKEN);
-    const forceRefresh = canForce && url.searchParams.has("force");
+    const forceRefresh = isDev && url.searchParams.has("force");
 
     // Debug route to inspect KV contents (dev only)
     if (isDev && url.pathname === "/__debug/kv") {
@@ -202,95 +203,80 @@ export default {
     }
 
     const lang = resolveLang(req, url);
-    const cacheKey = `dofus_${ lang }`;
     const clientEtag = req.headers.get("If-None-Match");
 
-    // 1. Get current version (KV if < 1h old, otherwise GitHub)
-    let release: GitHubRelease;
+    let refreshResult: RefreshResult;
     try {
-      release = forceRefresh
-        ? await fetchLatestRelease()
-        : await getLatestRelease(env);
+      refreshResult = await refreshLang(env, ctx, lang, forceRefresh);
     } catch (err) {
-      // GitHub unreachable → fallback to KV cache if available
-      const cached = await env.KV.get<KVCacheEntry>(cacheKey, "json");
+      const cached = await env.KV.get<KVCacheEntry>(`dofus_${ lang }`, "json");
       if (cached) {
-        console.warn("GitHub unreachable, using cached data:", (err as Error).message);
+        console.warn("Refresh failed, using cached data:", (err as Error).message);
         return buildResponse(cached.data, cached.etag, env, req.method);
       }
-      return new Response("GitHub unavailable and no cache found", { status: 503 });
+      return new Response(`Refresh failed: ${ (err as Error).message }`, { status: 502 });
     }
 
-    const latestVersion = release.tag_name;
-    const etag = `"${ latestVersion }_${ lang }"`;
-
-    // 2. ETag match → browser already has the right version
-    if (clientEtag === etag) {
+    // ETag match → browser already has the right version
+    if (clientEtag === refreshResult.etag) {
       return new Response(null, {
         status: 304,
-        headers: { ETag: etag, ...corsHeaders(env) },
+        headers: { ETag: refreshResult.etag, ...corsHeaders(env) },
       });
     }
 
-    // 3. Read KV cache for this language
-    const cached = forceRefresh ? null : await env.KV.get<KVCacheEntry>(cacheKey, "json");
-
-    // 4. Same version in KV → serve directly without downloading assets
-    if (cached && cached.version === latestVersion) {
-      return buildResponse(cached.data, etag, env, req.method);
-    }
-
-    // 5. New version (or empty KV) → download & transform ONLY the requested lang
-    //    Other languages will be lazily transformed on their first request.
-    console.log(`New version: ${ latestVersion }, transforming lang=${ lang }`);
-
-    let result: TransformResult;
-    try {
-      const [itemsRaw, setsRaw] = await Promise.all([
-                                                      downloadAsset<RawItem[]>(release, "MAPPED_ITEMS.json"),
-                                                      downloadAsset<RawSet[]>(release, "MAPPED_SETS.json"),
-                                                    ]);
-      const t0 = performance.now();
-      result = transformOneLang(itemsRaw, setsRaw, latestVersion, lang);
-      console.log(`Transform (${ lang }): ${ (performance.now() - t0).toFixed(1) }ms`);
-    } catch (err) {
-      if (cached) {
-        console.error("Download failed, using cached data:", (err as Error).message);
-        return buildResponse(cached.data, cached.etag, env, req.method);
-      }
-      return new Response(`Download failed: ${ (err as Error).message }`, { status: 502 });
-    }
-
-    // 6. Store only this language in KV (fire & forget — not on the critical path)
-    const kvPayload: KVCacheEntry = { data: result, etag, version: latestVersion };
-    const kvPromise = env.KV.put(cacheKey, JSON.stringify(kvPayload), {
-      expirationTtl: 60 * 60 * 24 * 7,
-    }).catch((e) => console.error("KV write failed:", e));
-
-    ctx.waitUntil(kvPromise);
-
-    return buildResponse(result, etag, env, req.method);
+    return buildResponse(refreshResult.data, refreshResult.etag, env, req.method);
   },
 
-  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    const baseUrl = env.WORKER_URL;
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    const langIndex = new Date().getUTCHours() % SUPPORTED_LANGS.length;
+    const lang = SUPPORTED_LANGS[langIndex];
+    console.log(`Cron: refreshing lang=${ lang }`);
 
-    const tasks = SUPPORTED_LANGS.map(lang => {
-      const targetUrl = `${baseUrl}/?lang=${lang}&force=true`;
-
-      return fetch(targetUrl, {
-        method: "GET",
-        headers: {
-          "X-Cron-Token": env.CRON_TOKEN || ""
-        }
-      }).then(res => {
-        console.log(`Cron loop for ${lang}: ${res.status}`);
-      });
-    });
-
-    ctx.waitUntil(Promise.all(tasks));
+    try {
+      await refreshLang(env, ctx, lang, true);
+      console.log(`Cron: ${ lang } refreshed successfully`);
+    } catch (err) {
+      console.error(`Cron: ${ lang } refresh failed:`, (err as Error).message);
+    }
   }
 } satisfies ExportedHandler<Env>;
+
+// ─── Core refresh logic ─────────────────────────────────────────────────────
+
+async function refreshLang(env: Env, ctx: ExecutionContext, lang: Lang, forceRefresh: boolean): Promise<RefreshResult> {
+  const cacheKey = `dofus_${ lang }`;
+
+  const release = forceRefresh ? await fetchLatestRelease() : await getLatestRelease(env);
+
+  const latestVersion = release.tag_name;
+  const etag = `"${ latestVersion }_${ lang }"`;
+
+  // Check KV cache
+  const cached = forceRefresh ? null : await env.KV.get<KVCacheEntry>(cacheKey, "json");
+  if (cached && cached.version === latestVersion) {
+    return { data: cached.data, etag };
+  }
+
+  // Download & transform
+  console.log(`New version: ${ latestVersion }, transforming lang=${ lang }`);
+  const [itemsRaw, setsRaw] = await Promise.all([
+                                                  downloadAsset<RawItem[]>(release, "MAPPED_ITEMS.json"),
+                                                  downloadAsset<RawSet[]>(release, "MAPPED_SETS.json"),
+                                                ]);
+  const t0 = performance.now();
+  const result = transformOneLang(itemsRaw, setsRaw, latestVersion, lang);
+  console.log(`Transform (${ lang }): ${ (performance.now() - t0).toFixed(1) }ms`);
+
+  // Store in KV (fire & forget)
+  const kvPayload: KVCacheEntry = { data: result, etag, version: latestVersion };
+  const kvPromise = env.KV.put(cacheKey, JSON.stringify(kvPayload), {
+    expirationTtl: 60 * 60 * 24 * 7,
+  }).catch((e) => console.error("KV write failed:", e));
+  ctx.waitUntil(kvPromise);
+
+  return { data: result, etag };
+}
 
 // ─── JSON response ───────────────────────────────────────────────────────────
 
@@ -345,10 +331,7 @@ async function getLatestRelease(env: Env): Promise<GitHubRelease> {
 
   const release = await fetchLatestRelease();
 
-  await env.KV.put(
-    "latest_release",
-    JSON.stringify({ release, checkedAt: Date.now() } satisfies KVReleaseEntry)
-  );
+  await env.KV.put("latest_release", JSON.stringify({ release, checkedAt: Date.now() } satisfies KVReleaseEntry));
 
   return release;
 }
@@ -453,7 +436,9 @@ function transformOneLang(
         const eid = e.element_id;
         if (eid != null && !(eid in effectTypes)) {
           const t = e.type?.[lang];
-          if (t) effectTypes[eid] = t;
+          if (t) {
+            effectTypes[eid] = t;
+          }
         }
       }
       effects = arr;
