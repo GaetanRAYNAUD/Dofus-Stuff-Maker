@@ -6,6 +6,9 @@ on:
     - cron: '0 15 * * *'
     - cron: '0 19 * * *'
 
+permissions:
+  contents: write
+
 jobs:
   sync:
     runs-on: ubuntu-latest
