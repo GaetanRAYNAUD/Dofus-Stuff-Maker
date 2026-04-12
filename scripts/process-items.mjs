@@ -186,7 +186,7 @@ function transform(itemsRaw, setsRaw, version) {
   }
 
   return {
-    version, generatedAt: new Date().toISOString(), effectTypes, itemTypes, items, sets,
+    version, effectTypes, itemTypes, items, sets,
   };
 }
 

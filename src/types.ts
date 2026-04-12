@@ -83,7 +83,6 @@ export interface MappedSet {
 
 export interface DofusData {
   version: string;
-  generatedAt: string;
   /** effectTypeId → localised label */
   effectTypes: Record<number, I18nString>;
   /** itemTypeId → localised label */

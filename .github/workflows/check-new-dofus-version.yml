@@ -8,10 +8,17 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check_json.outputs.changed }}
 
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +50,12 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add public/data/items.json public/images/
-          git commit -m "chore: sync items and images (v${{ steps.get_version.outputs.version }})"
+          git commit -m "chore: New version : (v${{ steps.get_version.outputs.version }})"
           git tag "v${{ steps.get_version.outputs.version }}"
           git push
           git push --tags
+
+  deploy:
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    uses: ./.github/workflows/deploy.yml
