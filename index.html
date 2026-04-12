@@ -13,18 +13,27 @@
 
   <div id="loading" class="loading-overlay">
     <div class="loading-spinner"></div>
-    <p class="loading-label">Chargement des données…</p>
+    <p class="loading-label"></p>
   </div>
 
   <div id="app" class="app" hidden>
     <header class="app-header">
       <h1 class="app-title">Dofus Stuff Maker</h1>
-      <span class="app-version" id="app-version"></span>
+      <div class="header-right">
+        <div class="lang-selector" id="lang-selector"></div>
+        <span class="app-version" id="app-version"></span>
+      </div>
     </header>
 
     <main class="app-main">
 
       <section class="equipment-section">
+
+        <div class="search-container" id="search-container">
+          <input type="search" class="search-input" id="search-input" autocomplete="off" spellcheck="false" />
+          <ul class="search-results" id="search-results" hidden></ul>
+        </div>
+
         <div class="equipment-grid" id="equipment-grid">
           <!-- slots injected by main.ts -->
           <div class="character-area" id="character-area">
@@ -68,7 +77,7 @@
 
         <div class="dofus-divider">
           <span class="dofus-divider-line"></span>
-          <span class="dofus-divider-label">Dofus</span>
+          <span class="dofus-divider-label" id="dofus-divider-label"></span>
           <span class="dofus-divider-line"></span>
         </div>
         <div class="dofus-row" id="dofus-row">
@@ -77,9 +86,9 @@
       </section>
 
       <aside class="stats-panel">
-        <h2 class="panel-title">Caractéristiques</h2>
+        <h2 class="panel-title" id="panel-title"></h2>
         <div id="stats-content" class="stats-empty">
-          <p>Équipez des objets<br>pour voir les stats.</p>
+          <p id="stats-empty-text"></p>
         </div>
       </aside>
 

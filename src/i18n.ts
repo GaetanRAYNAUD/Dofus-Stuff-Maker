@@ -15,7 +15,12 @@ const UI = {
   slotDofus:  { fr: "Dofus",    en: "Dofus",   es: "Dofus",    pt: "Dofus",   de: "Dofus"    },
   loading:    { fr: "Chargement des données\u202f…", en: "Loading data\u2026", es: "Cargando datos\u2026", pt: "Carregando dados\u2026", de: "Daten werden geladen\u2026" },
   error:      { fr: "Erreur",   en: "Error",   es: "Error",    pt: "Erro",    de: "Fehler"   },
-  statsEmpty: { fr: "Équipez des objets\npour voir les stats.", en: "Equip items\nto see stats.", es: "Equipa objetos\npara ver las stats.", pt: "Equipe itens\npara ver as stats.", de: "Rüste Gegenstände aus\num die Stats zu sehen." },
+  statsTitle:       { fr: "Caractéristiques", en: "Characteristics", es: "Características", pt: "Características", de: "Eigenschaften"    },
+  statsEmpty:       { fr: "Équipez des objets\npour voir les stats.", en: "Equip items\nto see stats.", es: "Equipa objetos\npara ver las stats.", pt: "Equipe itens\npara ver as stats.", de: "Rüste Gegenstände aus\num die Stats zu sehen." },
+  searchPlaceholder: { fr: "Rechercher un item…", en: "Search an item…", es: "Buscar un objeto…", pt: "Buscar um item…", de: "Gegenstand suchen…" },
+  searchNoResult:    { fr: "Aucun résultat",       en: "No results",      es: "Sin resultados",   pt: "Sem resultados",   de: "Keine Ergebnisse" },
+  searchLevel:       { fr: "Niv.",                 en: "Lv.",             es: "Niv.",             pt: "Nív.",             de: "Lv."              },
+  searchEquip:       { fr: "Équiper",              en: "Equip",           es: "Equipar",          pt: "Equipar",          de: "Anlegen"          },
 } satisfies Record<string, Translations>;
 
 export type UIKey = keyof typeof UI;
