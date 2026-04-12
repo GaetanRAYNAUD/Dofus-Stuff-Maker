@@ -105,8 +105,14 @@ async function main() {
 
   const stats = { downloaded: 0, skipped: 0, errors: 0, total: entries.length };
 
+  const downloadable = entries.filter(([, item]) => item.image);
+  stats.total = downloadable.length;
+
+  const skipped = entries.length - downloadable.length;
+  if (skipped > 0) console.log(`  (${skipped} items skipped — no image URL)\n`);
+
   await runConcurrent(
-    entries,
+    downloadable,
     ([id, item]) => downloadOne(id, item.image, stats, manifest),
     CONCURRENCY,
   );

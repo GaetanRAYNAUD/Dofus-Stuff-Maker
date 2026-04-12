@@ -45,6 +45,8 @@ export interface MappedItem {
   /** Key into DofusData.itemTypes */
   typeId: number;
   iconId: number;
+  /** Full URL to the item icon, or null if unavailable */
+  image: string | null;
   /** null when the item belongs to no set */
   setId: number | null;
   effects: MappedEffect[];

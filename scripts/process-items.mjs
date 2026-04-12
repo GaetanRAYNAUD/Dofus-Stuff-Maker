@@ -114,6 +114,7 @@ function transform(itemsRaw, setsRaw, version) {
       level: item.level,
       typeId: item.type.id,
       iconId: item.iconId,
+      image: item.image ?? null,
       setId: item.hasParentSet ? item.parentSet.id : null,
       effects,
     };
