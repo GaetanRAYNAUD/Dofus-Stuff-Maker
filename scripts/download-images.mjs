@@ -13,19 +13,17 @@ import { fileURLToPath }                      from "url";
 
 const __dirname  = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT  = join(__dirname, "..");
-const IMAGES_DIR = join(REPO_ROOT, "front", "public", "images");
+const IMAGES_DIR = join(REPO_ROOT, "public", "images");
+const ITEMS_FILE = join(REPO_ROOT, "public", "data", "items.json");
 const MANIFEST   = join(IMAGES_DIR, "manifest.json");
-const WORKER_URL = "https://dofus-stuff-maker-worker.gaetanraynaud.fr";
-const CONCURRENCY = 1;
+const CONCURRENCY = 3;
 const FORCE       = process.argv.includes("--force");
 
-// ─── Fetch items ─────────────────────────────────────────────────────────────
+// ─── Read items from local JSON ───────────────────────────────────────────────
 
 async function fetchItems() {
-  // Language doesn't matter — images are identical across langs
-  const res = await fetch(`${WORKER_URL}?lang=fr`);
-  if (!res.ok) throw new Error(`Worker responded with ${res.status}`);
-  const data = await res.json();
+  const raw = await readFile(ITEMS_FILE, "utf8");
+  const data = JSON.parse(raw);
   return data.items; // Record<id, MappedItem>
 }
 

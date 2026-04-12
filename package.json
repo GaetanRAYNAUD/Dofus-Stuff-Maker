@@ -4,11 +4,10 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs --watch",
-    "download-images": "node ../scripts/download-images.mjs"
+    "dev": "node build.mjs --watch"
   },
   "devDependencies": {
     "esbuild": "0.28.0",
-    "typescript": "5.9.3"
+    "typescript": "6.0.2"
   }
 }

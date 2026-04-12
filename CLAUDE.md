@@ -2,56 +2,62 @@
 
 ## Vue d'ensemble
 
-Outil de création de stuff pour Dofus 3. Le projet contient pour l'instant un **Cloudflare Worker** (`worker/`) qui sert de proxy/cache entre le navigateur et les releases GitHub de [dofusdude/dofus3-main](https://github.com/dofusdude/dofus3-main).
+Outil de création de stuff pour Dofus 3. Les données sont générées automatiquement par un cron GitHub Actions depuis les releases de [dofusdude/dofus3-main](https://github.com/dofusdude/dofus3-main) et servies comme fichiers statiques avec le front.
 
 ## Architecture
 
-### Worker (`worker/`)
+```
+scripts/          Scripts CI (Node.js, sans dépendances)
+src/              Sources TypeScript du front
+  types.ts        Types (DofusData, MappedItem, etc.)
+  api.ts          Chargement du JSON local
+  main.ts         Point d'entrée UI
+public/           Assets statiques
+  data/
+    items.json    Généré par le CI (toutes les langues embarquées)
+  images/         Images des items téléchargées par le CI ({id}.png)
+build.mjs         Script de build esbuild
+index.html        Page principale
+style.css         Styles
+```
 
-- **Runtime** : Cloudflare Workers (TypeScript, compilé par wrangler)
-- **Stockage** : Cloudflare KV (binding `KV`)
-- **Source de données** : GitHub Releases API (`dofusdude/dofus3-main`) — fichiers `MAPPED_ITEMS.json` et `MAPPED_SETS.json`
-- **Point d'entrée** : `worker/dofus-stuff-maker-worker.ts`
+## Pipeline de mise à jour des données
 
-#### Fonctionnement
-1. Reçoit une requête GET, détecte la langue (`?lang=` ou `Accept-Language`)
-2. Vérifie la dernière release GitHub (cache KV 1h via `latest_release`)
-3. Si même version → sert depuis KV ; sinon télécharge les assets, transforme via `transformOneLang()`, met en cache KV (TTL 7j)
-4. Gère ETag/304 et Cache-Control (1h navigateur, stale-while-revalidate 24h)
-5. Chaque langue est transformée/cachée indépendamment (lazy, au premier appel)
+Cron quotidien à 15h UTC (`.github/workflows/check-new-dofus-version.yml`) :
 
-#### Transformation (`transformOneLang()`)
+1. **`scripts/process-items.mjs`** — interroge l'API GitHub Releases, télécharge `MAPPED_ITEMS.json` et `MAPPED_SETS.json`, transforme et filtre les données, écrit `public/data/items.json`
+2. **`scripts/download-images.mjs`** — lit `items.json` et télécharge les images manquantes dans `public/images/{id}.png`
+3. Le workflow commit et pousse uniquement si `items.json` a changé (nouvelle version détectée)
+
+### Transformation (`scripts/process-items.mjs`)
 - Filtre les items par `superTypeId` (équipements uniquement, set `EQUIPMENT_SUPER_TYPES`)
-- Extrait les effets, conditions, types d'effets et types d'items pour une seule langue
 - Filtre les sets (exclut cosmétiques-only, garde uniquement ceux avec au moins un item retenu)
-- Produit un `TransformResult` avec : `version`, `lang`, `generatedAt`, `effectTypes`, `itemTypes`, `items`, `sets`
+- Toutes les langues (`fr`, `en`, `es`, `pt`, `de`) sont embarquées dans un seul fichier — les champs localisés (`name`, `effectTypes`, `itemTypes`) sont des objets `{ fr, en, … }` plutôt que des strings
+- Produit : `version`, `generatedAt`, `effectTypes`, `itemTypes`, `items`, `sets`
 
-#### Config
-- `wrangler.toml` — config dev (versionné)
-- `wrangler.prod.toml` — config prod avec vrais IDs KV et domaine (gitignored)
-- Langues supportées : `fr` (défaut), `en`, `es`, `pt`, `de`
+## Frontend
 
-#### Routes dev
-- `/__debug/kv` — inspecte le contenu KV (uniquement si `DEV=true`)
-- `?force` — force le re-fetch GitHub (uniquement si `DEV=true`)
+- Application entièrement côté navigateur, déployée sur **GitHub Pages**
+- Charge `./data/items.json` au démarrage (cache HTTP navigateur)
+- Détecte la langue via `navigator.language`, résout les strings i18n à l'affichage
+- Les images sont référencées en local : `./images/{id}.png`
+- Pas de backend, pas d'appel réseau externe à l'exécution
 
 ## Commandes
 
 ```bash
-# Dev local
-cd worker && wrangler dev
+# Build du front (depuis la racine)
+npm run build
 
-# Deploy prod
-cd worker && wrangler deploy --config wrangler.prod.toml
+# Dev avec watch + serveur local
+npm run dev
+
+# Lancer les scripts CI manuellement
+node scripts/process-items.mjs
+node scripts/download-images.mjs
 ```
-
-## Stack
-
-- **Frontend** : HTML/CSS + TypeScript (quelques fichiers JS compilés)
-- **Hébergement front** : Cloudflare Pages
-- **Pas de backend** — tout se passe dans le navigateur
 
 ## Conventions
 
 - Code et commentaires en **anglais**
-- Le worker est compilé par wrangler (TypeScript → JS, pas de bundler externe)
+- Le front est compilé par esbuild (TypeScript → JS)
