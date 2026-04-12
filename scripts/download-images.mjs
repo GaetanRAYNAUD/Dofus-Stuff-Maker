@@ -62,9 +62,23 @@ async function downloadOne(id, imageUrl, stats, manifest) {
   }
 
   try {
-    const res = await fetch(imageUrl);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const res = await fetch(imageUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36" },
+    });
+    if (res.status === 403 || res.status === 404) {
+      stats.skipped++;
+      printProgress(stats);
+      return;
+    }
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
     const buf = await res.arrayBuffer();
+    if (buf.byteLength === 0) {
+      stats.skipped++;
+      printProgress(stats);
+      return;
+    }
     await writeFile(filepath, Buffer.from(buf));
     manifest[id] = relative;
     stats.downloaded++;
@@ -122,6 +136,7 @@ async function main() {
 
   await writeFile(MANIFEST, JSON.stringify(manifest, null, 2));
   console.log(`Manifest : ${MANIFEST}`);
+
 }
 
 main().catch((err) => {
